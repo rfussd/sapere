@@ -77,65 +77,38 @@ if page == "🏠 Dashboard":
         # Plan de hoy (basado en horario del usuario)
         sched = st.session_state.user_settings
         now = datetime.now()
-        current_time = now.strftime("%H:%M")
         hour = now.hour
 
-        st.subheader(f"📅 Tu plan de hoy")
-        plan_cols = st.columns(3)
-
-        # Determinar fase del dia
-        if 5 <= hour < 7:
-            phase = "traslado_am"
-        elif 16 <= hour < 17:
-            phase = "llegada"
-        elif 17 <= hour < 20:
-            phase = "estudio"
-        elif 20 <= hour < 21:
-            phase = "cierre"
-        else:
-            phase = "libre"
-
-        phases = {
-            "traslado_am": ("🚌 En el camion (ida)", "📱 Flashcards ligeras en el celular", "🚌 Modo Traslado"),
-            "llegada": ("🏠 Recien llegado", "🍽 Come, banate, descansa", None),
-            "estudio": ("💻 Bloque de estudio", "Enfocate en una materia prioritaria", "🏠 Dashboard"),
-        }
-
-        # Plan cards
         sorted_subjects = sorted(
             [(get_subject_progress(s["id"]).get("due_flashcards", 0) or 0, s) for s in subjects],
             key=lambda x: -x[0],
         )
         top_due = sorted_subjects[:3] if sorted_subjects else []
 
-        with plan_cols[0]:
-            st.markdown('<div style="background:#131820;border:1px solid #1e2733;border-radius:10px;padding:14px;height:100%">', unsafe_allow_html=True)
-            st.markdown("#### 🌅 Mañana (5-7 AM)")
-            st.caption("🚌 En el camion de ida")
-            st.write("📱 **Modo Traslado**")
-            st.caption("Flashcards ligeras en el celular. Exporta el HTML antes de salir.")
-            st.markdown('</div>', unsafe_allow_html=True)
+        if top_due and top_due[0][0] > 0:
+            st.subheader("🎯 Hoy enfocate en esto")
 
-        with plan_cols[1]:
-            st.markdown('<div style="background:#131820;border:1px solid #1e2733;border-radius:10px;padding:14px;height:100%">', unsafe_allow_html=True)
-            st.markdown("#### 🌤 Tarde (5-8 PM)")
-            st.caption("💻 En casa, sesion principal")
-            if top_due:
-                top_subj = top_due[0][1]
-                st.write(f"🎯 **{top_subj['name']}**")
-                st.caption(f"📝 {top_due[0][0]} pendientes — la mas urgente")
-            st.markdown('</div>', unsafe_allow_html=True)
+            c1, c2 = st.columns([2, 1])
+            with c1:
+                primary = top_due[0]
+                icon = MODE.get(primary[1].get("mode", "academic"), "🎓")
+                st.markdown(f"""<div style="background:#131820;border:1px solid #f85149;border-radius:12px;padding:18px 22px">
+                <div style="font-size:13px;color:#f85149;margin-bottom:4px">🔴 MATERIA PRIORITARIA — {primary[0]} flashcards pendientes</div>
+                <div style="font-size:22px;font-weight:700;color:#c9d1d9">{icon} {primary[1]['name']}</div>
+                <div style="font-size:13px;color:#8b949e;margin-top:6px">El SM-2 ya sabe cuales flashcards tocan hoy. Solo dale click en Estudiar.</div>
+                </div>""", unsafe_allow_html=True)
+            with c2:
+                st.markdown("### ¿Como funciona?")
+                st.caption("El sistema SM-2 programa automaticamente cada flashcard segun que tan bien la recuerdas.")
+                st.caption("Las que fallas → aparecen mas seguido. Las que dominas → se espacian.")
+                st.caption("**Tu unico trabajo:** abrir Sapere y repasar las que tocan hoy.")
 
-        with plan_cols[2]:
-            st.markdown('<div style="background:#131820;border:1px solid #1e2733;border-radius:10px;padding:14px;height:100%">', unsafe_allow_html=True)
-            st.markdown("#### 🌙 Noche (8-9 PM)")
-            st.caption("🧠 Pre-sueno")
-            st.write("🌙 **Cierre Nocturno**")
-            total_all_due = sum(get_subject_progress(s["id"]).get("due_flashcards", 0) or 0 for s in subjects)
-            st.caption(f"Repasa las {min(10, total_all_due)} mas debiles antes de dormir")
-            st.markdown('</div>', unsafe_allow_html=True)
+            if len(top_due) > 1 and top_due[1][0] > 0:
+                st.caption(f"Si te queda energia despues: **{top_due[1][1]['name']}** ({top_due[1][0]} pend.)")
 
-        st.markdown("---")
+            st.markdown("---")
+        else:
+            st.success("🎉 Sin flashcards pendientes. ¡Estas al dia! Repasa ejercicios o el modo examen.")
 
         # Materias
         st.subheader("Tus materias")
