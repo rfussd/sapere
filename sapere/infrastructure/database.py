@@ -142,7 +142,7 @@ CREATE INDEX IF NOT EXISTS idx_feynman_topic ON feynman_attempts(topic_id);
 
 
 def get_db_path() -> str:
-    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    base = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     return os.path.join(base, config.db_path)
 
 

@@ -189,8 +189,13 @@ elif page == "⚙ Configuracion":
     st.write(f"API Key: {'Configurada ✅' if config.gemini_api_key else 'Falta ❌'}")
 
     st.subheader("📊 Estadisticas")
-    db_size = __import__("os").path.getsize(config.db_path) / 1024
-    st.write(f"Base de datos: `{config.db_path}` ({db_size:.1f} KB)")
+    from sapere.infrastructure.database import get_db_path
+    db_path = get_db_path()
+    if __import__("os").path.exists(db_path):
+        db_size = __import__("os").path.getsize(db_path) / 1024
+        st.write(f"Base de datos: `{db_path}` ({db_size:.1f} KB)")
+    else:
+        st.write("Base de datos: No creada aun")
 
     if st.button("💾 Guardar configuracion", type="primary", use_container_width=True):
         st.session_state.user_settings = settings
