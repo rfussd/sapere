@@ -76,58 +76,68 @@ if page == "🏠 Dashboard":
     else:
         st.subheader("Tus materias")
 
+        subject_cards = []
         for s in subjects:
             p = get_subject_progress(s["id"])
             mastery = int(p.get("avg_mastery", 0) * 100) if p.get("avg_mastery") else 0
             due = p.get("due_flashcards", 0) or 0
             total = p.get("total_flashcards", 0) or 0
             mode = s.get("mode", "academic")
+
+            if total > 0 and due > 5:
+                priority = 0
+            elif total > 0 and mastery < 50:
+                priority = 1
+            elif total > 0:
+                priority = 2
+            else:
+                priority = 3
+
+            subject_cards.append((priority, s, mastery, due, total, mode))
+
+        subject_cards.sort(key=lambda x: (x[0], -x[3]))
+
+        for priority, s, mastery, due, total, mode in subject_cards:
             color = MODE_COLORS.get(mode, "#58a6ff")
             icon = MODE.get(mode, "🎓")
 
             if mastery >= 80:
-                priority_color = "#7ee787"
-                priority_badge = "Dominado"
+                badge_color, badge_text = "#7ee787", "Dominado"
             elif mastery >= 50:
-                priority_color = "#d29922"
-                priority_badge = "En progreso"
+                badge_color, badge_text = "#d29922", "En progreso"
             elif total > 0:
-                priority_color = "#f85149"
-                priority_badge = "Prioritario"
+                badge_color, badge_text = "#f85149", "Prioritario"
             else:
-                priority_color = "#8b949e"
-                priority_badge = "Nuevo"
+                badge_color, badge_text = "#8b949e", "Nuevo"
 
             with st.container(border=True):
-                r1_cols = st.columns([4, 1, 1, 1])
-                with r1_cols[0]:
+                r1 = st.columns([3, 1, 1, 0.8])
+                with r1[0]:
                     st.markdown(f"### {icon} {s['name']}")
-                with r1_cols[1]:
-                    st.metric("Dominio", f"{mastery}%")
-                with r1_cols[2]:
-                    st.markdown(f"<span style='background:{priority_color}20;color:{priority_color};padding:4px 10px;border-radius:8px;font-size:13px;font-weight:600'>{priority_badge}</span>", unsafe_allow_html=True)
-                with r1_cols[3]:
-                    st.write(f"📝 {due}" if due > 0 else "✅")
+                with r1[1]:
+                    st.markdown(f"<span style='background:{badge_color}20;color:{badge_color};padding:2px 8px;border-radius:6px;font-size:12px;font-weight:600'>{badge_text}</span>", unsafe_allow_html=True)
+                    st.caption(f"{mastery}% dominio" if total > 0 else "Sin iniciar")
+                with r1[2]:
+                    if total > 0:
+                        if due > 0:
+                            st.markdown(f"<span style='color:#f85149;font-size:14px;font-weight:600'>📝 {due}</span>", unsafe_allow_html=True)
+                        else:
+                            st.markdown("<span style='color:#7ee787'>✅</span>", unsafe_allow_html=True)
+                    else:
+                        st.caption("—")
+                with r1[3]:
+                    if total > 0:
+                        if st.button("▶", key=f"g_{s['id']}", help=f"Estudiar {s['name']}"):
+                            st.session_state.study_subject_id = s["id"]
+                            st.rerun()
 
                 if total > 0:
-                    pct = mastery / 100 if mastery > 0 else 0.01
-                    st.markdown(f"""<div style="height:4px;background:#21262d;border-radius:2px;margin:4px 0 8px">
-                    <div style="width:{pct*100}%;height:100%;background:{color};border-radius:2px;transition:width 0.5s"></div></div>""", unsafe_allow_html=True)
-
-                btn_cols = st.columns([1, 1, 1, 3])
-                with btn_cols[0]:
-                    if total > 0 and st.button("📝 Estudiar", key=f"go_{s['id']}", use_container_width=True):
-                        st.session_state.study_subject_id = s["id"]
-                        st.rerun()
-                with btn_cols[1]:
-                    if due < 5 and total > 0:
-                        st.caption("Al día")
-                with btn_cols[2]:
-                    topics = __import__("sapere.infrastructure.database", fromlist=[""]).get_topics_for_subject(s["id"])
-                    st.caption(f"{len(topics)} temas")
+                    pct = max(0.02, mastery / 100)
+                    st.markdown(f"""<div style="height:3px;background:#1e2733;border-radius:2px;margin:2px 0">
+                    <div style="width:{pct*100}%;height:100%;background:{color};border-radius:2px"></div></div>""", unsafe_allow_html=True)
 
         st.markdown("---")
-        st.caption(f"💡 {total_due} flashcards pendientes. Cada 20 min de estudio = ~15 flashcards. Tardarías ~{max(1, total_due // 15) * 20} min en ponerlas al día.")
+        st.caption(f"💡 {total_due} flashcards pendientes = ~{max(1, total_due // 10) * 15} min de estudio.")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
