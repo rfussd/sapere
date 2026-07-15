@@ -90,6 +90,22 @@ def show_study_page(subject_id: int):
 
     st.markdown("---")
 
+    with st.expander("🧠 ¿Como usar este modo de estudio?", expanded=False):
+        st.markdown("""
+        **Flujo recomendado (basado en neurociencia del aprendizaje):**
+
+        1. 📝 **Flashcards** — Active Recall + SM-2. El 80% de tu estudio. Responde, revela, califica.
+           → Usalas a diario. Es lo que mas retencion genera.
+        2. 🗣 **Feynman** — Explica el tema con tus palabras. La IA te dice que entendiste, que te falto, que confundiste.
+           → Usalo cuando YA viste las flashcards del tema y crees que lo entiendes.
+        3. ✏️ **Ejercicios** — Aplica lo aprendido. 3 niveles progresivos con scaffolding.
+           → Usalos cuando domines el active recall (80%+ en flashcards del tema).
+        4. 📊 **Examen** — Simulacro real. Cronometrado, sin ayudas, mezcla todos los temas.
+           → Usalo 1-2 veces por semana, especialmente antes de un examen real.
+
+        **No hagas todo el mismo dia.** Flashcards diario. Feynman 2-3 veces por semana. Ejercicios cuando te sientas listo. Examen los fines de semana.
+        """)
+
     saved = load_session_state()
     if saved and saved.get("subject_id") == subject_id and not st.session_state.get("session_active"):
         idx = saved.get("flashcard_index", 0)
@@ -241,9 +257,16 @@ def _show_flashcard_tab(subject_id: int, subject: dict, due: int, mode: str):
             st.caption(f"💡 {fc['hint']}")
 
     if not st.session_state.show_answer:
-        if st.button("📝 Revelar respuesta", type="primary", use_container_width=True):
-            st.session_state.show_answer = True
-            st.rerun()
+        use_pre_test = st.checkbox("🧪 Pre-testing: intenta responder antes de revelar", value=False, help="Intentar recordar ANTES de ver la respuesta genera conexiones neuronales mas fuertes (testing effect)")
+        if use_pre_test:
+            user_guess = st.text_area("¿Que crees que es?", key=f"pretest_{idx}", height=80, placeholder="Escribe lo que recuerdes, aunque no estes seguro...")
+            if st.button("📝 Revelar respuesta", type="primary", use_container_width=True):
+                st.session_state.show_answer = True
+                st.rerun()
+        else:
+            if st.button("📝 Revelar respuesta", type="primary", use_container_width=True):
+                st.session_state.show_answer = True
+                st.rerun()
     else:
         if mode == "tech":
             st.code(fc["answer"])
@@ -266,6 +289,8 @@ def _show_flashcard_tab(subject_id: int, subject: dict, due: int, mode: str):
         with col4:
             if st.button("🟣 Facil", use_container_width=True):
                 _process_review(fc["id"], ReviewScore.EASY, None)
+
+        st.caption("🔴=la vere pronto | 🟣=no la vere en mucho tiempo (SM-2)")
 
 
 def show_timer_controls():
