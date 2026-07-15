@@ -16,7 +16,7 @@ class AppConfig(BaseSettings):
     debug: bool = False
 
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
-    gemini_model: str = "gemini-3-flash-preview"
+    gemini_model: str = "gemini-flash-latest"
     deepseek_api_key: str = os.getenv("DEEPSEEK_API_KEY", "")
     request_timeout: int = 60
     max_retries: int = 3
