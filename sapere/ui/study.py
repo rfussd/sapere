@@ -13,8 +13,8 @@ from sapere.llm.gemini import GeminiFlash
 from sapere.llm.base import LLMProvider
 
 
-MODE_ICONS = {"academic": "🎓", "language": "🌍", "tech": "💻"}
-MODE_LABELS = {"academic": "Academico", "language": "Idiomas", "tech": "Tech"}
+MODE_ICONS = {"academic": "🎓", "language": "🌍", "tech": "💻", "code": "🐍"}
+MODE_LABELS = {"academic": "Academico", "language": "Idiomas", "tech": "Tech", "code": "Programacion"}
 
 
 def _safe_call(fn, *args, **kwargs):
@@ -79,6 +79,8 @@ def show_study_page(subject_id: int):
         tab_names = ["📝 Flashcards", "🔤 Cloze", "🗣 Feynman", "📊 Examen"]
     elif mode == "tech":
         tab_names = ["📝 Flashcards", "🖥 Terminal", "🗣 Feynman", "📊 Examen"]
+    elif mode == "code":
+        tab_names = ["📝 Flashcards", "🐍 Practicar", "🗣 Feynman", "📊 Examen"]
 
     tabs = st.tabs(tab_names)
 
@@ -90,6 +92,8 @@ def show_study_page(subject_id: int):
             _show_cloze_tab(subject_id)
         elif mode == "tech":
             _show_terminal_tab(subject_id)
+        elif mode == "code":
+            _show_code_tab(subject_id)
         else:
             _show_exercises_tab(subject_id, subject, mode)
 
@@ -631,6 +635,87 @@ Devuelve: {{{{"scenario": "...", "command": "...", "explanation": "..."}}}}""")
                 st.session_state.terminal_data = None
                 st.session_state.terminal_answer_shown = False
                 st.rerun()
+
+
+def _show_code_tab(subject_id: int):
+    st.subheader("🐍 Practicar codigo")
+    st.caption("Ejercicios interactivos de programacion. Escribe codigo y recibe feedback.")
+
+    for key in ["code_data", "code_answer_shown", "code_loading", "code_user"]:
+        if key not in st.session_state:
+            st.session_state[key] = None if key in ["code_data", "code_user"] else False
+
+    topics = database.get_topics_for_subject(subject_id)
+    if not topics:
+        st.info("Sin temas.")
+        return
+
+    selected = st.selectbox("Tema", [t["name"] for t in topics], key="code_topic")
+
+    if st.button("🎲 Generar ejercicio", type="primary", use_container_width=True):
+        st.session_state.code_loading = True
+        st.session_state.code_answer_shown = False
+        st.session_state.code_user = None
+        with st.spinner("Generando ejercicio..."):
+            try:
+                llm = LLMProvider(primary=GeminiFlash())
+                response = llm.call_with_json(f"""Genera un ejercicio de programacion sobre "{selected}" para un principiante.
+Devuelve: {{{{"instruction": "Que debe hacer el estudiante", "solution": "codigo solucion", "explanation": "explicacion linea por linea", "hint": "pista si se atora"}}}}""")
+                from sapere.utils.json_parser import robust_json_parse
+                st.session_state.code_data = robust_json_parse(response)
+            except Exception as e:
+                st.error(f"Error: {e}")
+        st.session_state.code_loading = False
+        st.rerun()
+
+    if st.session_state.code_data:
+        d = st.session_state.code_data
+        st.markdown("---")
+        st.info(f"**Ejercicio:** {d.get('instruction', '')}")
+        if d.get("hint"):
+            with st.expander("💡 Pista"):
+                st.write(d["hint"])
+
+        user_code = st.text_area("Tu codigo:", key="code_area", height=200, placeholder="# Escribe tu solucion aqui...")
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("✅ Ver solucion", use_container_width=True):
+                st.session_state.code_answer_shown = True
+                st.rerun()
+        with col2:
+            if user_code and st.button("🧠 Obtener feedback", use_container_width=True, type="primary"):
+                with st.spinner("Evaluando..."):
+                    try:
+                        llm = LLMProvider(primary=GeminiFlash())
+                        feedback = llm.call(f"""Evalua este codigo de un estudiante principiante.
+Ejercicio: {d.get('instruction')}
+Solucion esperada: {d.get('solution')}
+Codigo del estudiante: {user_code}
+
+Da feedback constructivo: que esta bien, que esta mal, y como mejorarlo.
+Se breve (3-4 lineas maximo). Anima al estudiante.""")
+                        st.session_state.code_user = feedback
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+                st.rerun()
+        with col3:
+            if st.button("🎲 Otro ejercicio", use_container_width=True):
+                st.session_state.code_data = None
+                st.session_state.code_answer_shown = False
+                st.session_state.code_user = None
+                st.rerun()
+
+        if st.session_state.code_answer_shown:
+            st.markdown("---")
+            st.markdown("### Solucion")
+            st.code(d.get("solution", ""))
+            st.caption(d.get("explanation", ""))
+
+        if st.session_state.code_user:
+            st.markdown("---")
+            st.markdown("### 🧠 Feedback de la IA")
+            st.info(st.session_state.code_user)
 
 
 

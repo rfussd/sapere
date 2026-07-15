@@ -30,6 +30,7 @@ class LLMProvider:
 
     def call(self, prompt: str, system_prompt: str = "", max_retries: int = 5) -> str:
         for attempt in range(max_retries):
+            wait = 5 * (2 ** attempt)
             try:
                 logger.info("llm_call_attempt", provider=self.primary.__class__.__name__, attempt=attempt + 1)
                 return self.primary.call(prompt, system_prompt)
@@ -53,6 +54,7 @@ class LLMProvider:
 
     def call_with_json(self, prompt: str, system_prompt: str = "", max_retries: int = 5) -> str:
         for attempt in range(max_retries):
+            wait = 5 * (2 ** attempt)
             try:
                 logger.info("llm_json_call", provider=self.primary.__class__.__name__, attempt=attempt + 1)
                 return self.primary.call_with_json(prompt, system_prompt)

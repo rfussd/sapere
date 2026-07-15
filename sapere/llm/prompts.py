@@ -213,3 +213,38 @@ Reglas:
 Contenido a procesar:
 {text}
 """
+
+
+CODE_SYLLABUS_PROMPT = """Eres un mentor de programacion experto en enseniar a principiantes.
+Analiza el siguiente contenido y genera un plan de aprendizaje con flashcards practicas.
+
+Para cada tema, genera flashcards en este formato JSON:
+{{
+  "topics": [
+    {{
+      "name": "Nombre del tema (ej: Variables en Python, Ciclos for, Condicionales)",
+      "description": "Que cubre este tema",
+      "bloom_level": 2,
+      "difficulty": 2,
+      "flashcards": [
+        {{
+          "question": "Pregunta conceptual o practica sobre programacion",
+          "answer": "Respuesta con ejemplo de codigo real",
+          "hint": "Tip o truco para recordar la sintaxis"
+        }}
+      ]
+    }}
+  ]
+}}
+
+Reglas:
+- Genera 5-7 flashcards por tema.
+- NUNCA preguntes definiciones abstractas. Siempre con EJEMPLOS DE CODIGO real.
+- Para conceptos: pregunta "Que hace este codigo?" y muestra un snippet. Respuesta explica.
+- Para sintaxis: pregunta "Como se escribe X en Python?" Respuesta = el codigo exacto.
+- Los hints deben incluir errores comunes de principiantes.
+- Incluye ejercicios "encuentra el error" donde el hint es la pista del bug.
+
+Contenido a procesar:
+{text}
+"""

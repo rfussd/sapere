@@ -3,6 +3,7 @@ import structlog
 from sapere.infrastructure import database
 from sapere.llm.base import LLMProvider
 from sapere.llm.prompts import (
+    CODE_SYLLABUS_PROMPT,
     LANGUAGE_SYLLABUS_PROMPT,
     SYLLABUS_ANALYSIS_PROMPT,
     TECH_SYLLABUS_PROMPT,
@@ -15,6 +16,7 @@ MODE_PROMPTS = {
     "academic": SYLLABUS_ANALYSIS_PROMPT,
     "language": LANGUAGE_SYLLABUS_PROMPT,
     "tech": TECH_SYLLABUS_PROMPT,
+    "code": CODE_SYLLABUS_PROMPT,
 }
 
 

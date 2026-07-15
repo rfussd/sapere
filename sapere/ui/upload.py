@@ -26,6 +26,12 @@ MODE_INFO = {
         "description": "Programacion, comandos Linux, ciberseguridad. Flashcards practicas con sintaxis real.",
         "examples": "Python, Linux, Hacking Etico, AWS, Docker...",
     },
+    "code": {
+        "icon": "🐍",
+        "label": "Programacion",
+        "description": "Aprende a programar desde cero. Flashcards con snippets de codigo, ejercicios interactivos.",
+        "examples": "Python, JavaScript, C, SQL...",
+    },
 }
 
 
@@ -35,7 +41,7 @@ def show_upload_page():
     st.markdown("### 🎯 ¿Que quieres aprender?")
     st.caption("Elige el tipo de contenido. Esto cambia como la IA genera las flashcards.")
 
-    cols = st.columns(3)
+    cols = st.columns(4)
     selected_mode = "academic"
 
     for i, (mode_key, info) in enumerate(MODE_INFO.items()):
@@ -141,6 +147,30 @@ def show_upload_page():
 
     elif mode == "academic":
         st.caption("Simplemente pega tu temario arriba o describe la materia.")
+
+    elif mode == "code":
+        st.subheader("🐍 Aprender a programar")
+        col_a, col_b = st.columns(2)
+        with col_a:
+            if st.button("🐍 Python Basico", use_container_width=True):
+                _process_syllabus(
+                    llm_provider, "Python Basico",
+                    "Variables y tipos de datos (int, float, str, bool). print() e input(). "
+                    "Condicionales if/elif/else. Ciclos for y while. Listas y diccionarios. "
+                    "Funciones: def, parametros, return. Manejo de archivos. "
+                    "Try/except para errores. Modulos e imports.",
+                    "code",
+                )
+        with col_b:
+            if st.button("🐍 Python Intermedio", use_container_width=True):
+                _process_syllabus(
+                    llm_provider, "Python Intermedio",
+                    "Clases y objetos (POO). Herencia y polimorfismo. Decoradores. "
+                    "Generadores e iteradores. Context managers (with). "
+                    "Type hints. Dataclasses. Archivos JSON y CSV. "
+                    "Requests/APIs. SQLite basico. Testing con pytest.",
+                    "code",
+                )
 
 
 def _process_syllabus(llm_provider, subject_name, raw_text, mode):

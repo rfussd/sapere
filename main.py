@@ -62,7 +62,7 @@ if page == "Inicio":
         st.info("No tienes materias todavia. Ve a 'Subir Temario' para empezar.")
     else:
         subjects_a, subjects_b, subjects_c = [], [], []
-        icon_map = {"academic": "🎓", "language": "🌍", "tech": "💻"}
+        icon_map = {"academic": "🎓", "language": "🌍", "tech": "💻", "code": "🐍"}
 
         for s in subjects:
             p = get_subject_progress(s["id"])
