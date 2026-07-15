@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 
 import streamlit as st
 
@@ -46,8 +47,46 @@ def show_study_page(subject_id: int):
     col1.metric("Dominio", f"{mastery}%")
     col2.metric("Pendientes", due)
     col3.metric("Total", total)
-    current_energy = get_current_energy()
-    col4.metric("Energia", {"LOW": "😫", "MEDIUM": "😐", "HIGH": "💪"}.get(current_energy.name, "😐"))
+
+    now = datetime.now()
+    col4.metric("Hora", now.strftime("%H:%M"))
+
+    # Timer visible (barra superior cuando esta activo)
+    if "timer_start" in st.session_state and st.session_state.get("session_active"):
+        total_s = st.session_state.timer_duration
+        if not st.session_state.get("timer_on_break"):
+            elapsed = time.time() - st.session_state.timer_start
+            remaining = max(0, total_s - elapsed)
+            mins = int(remaining // 60)
+            secs = int(remaining % 60)
+            progress = 1.0 - (remaining / total_s)
+
+            if remaining <= 0:
+                st.session_state.timer_breaks_taken = st.session_state.get("timer_breaks_taken", 0) + 1
+                if st.session_state.timer_breaks_taken >= 3:
+                    st.success("✅ Sesion completada. ¡Toma un descanso largo!")
+                else:
+                    st.session_state.timer_on_break = True
+                    st.session_state.timer_break_until = time.time() + 300
+                    st.session_state.timer_start = time.time()
+                    st.rerun()
+            else:
+                phase = "🔴 Ultimos minutos" if remaining < 300 else "🟡 Mitad de bloque" if remaining < total_s * 0.4 else "🟢 Enfoque profundo"
+                st.markdown(f"""<div style="background:#131820;border:1px solid #1e2733;border-radius:10px;padding:10px 16px;margin:8px 0">
+                <span style="font-size:13px;color:#8b949e">{phase}</span>
+                <span style="float:right;font-size:18px;font-weight:700;color:#58a6ff">{mins:02d}:{secs:02d}</span>
+                <div style="height:3px;background:#1e2733;border-radius:2px;margin-top:6px">
+                <div style="width:{progress*100}%;height:100%;background:{'#f85149' if remaining < 300 else '#58a6ff'};border-radius:2px"></div></div></div>""", unsafe_allow_html=True)
+
+        elif st.session_state.get("timer_on_break"):
+            break_remaining = st.session_state.timer_break_until - time.time()
+            if break_remaining <= 0:
+                st.session_state.timer_on_break = False
+                st.session_state.timer_start = time.time()
+                st.rerun()
+            bm = int(break_remaining // 60)
+            bs = int(break_remaining % 60)
+            st.info(f"☕ DESCANSO: {bm}:{bs:02d} — Alejate de la pantalla. Mira por la ventana. Respira.")
 
     st.markdown("---")
 
@@ -261,11 +300,12 @@ def _process_review(flashcard_id: int, score: ReviewScore, confidence: int | Non
 def _end_session():
     st.success(f"¡Sesion completada! {st.session_state.reviewed_count} flashcards.")
     if st.session_state.study_session_id:
-        energy = get_current_energy()
-        database.end_study_session(st.session_state.study_session_id, energy_end=int(energy))
+        elapsed = int(time.time() - st.session_state.get("timer_start", time.time()))
+        database.end_study_session(st.session_state.study_session_id, energy_end=2)
         database.record_daily_streak(minutes=st.session_state.reviewed_count * 2, sessions=1, topics=st.session_state.reviewed_count)
     clear_session_save()
-    for key in ["session_active", "flashcards", "current_flashcard_index", "show_answer", "reviewed_count", "study_session_id"]:
+    for key in ["session_active", "flashcards", "current_flashcard_index", "show_answer", "reviewed_count", "study_session_id",
+                "timer_start", "timer_duration", "timer_paused", "timer_energy", "timer_breaks_taken", "timer_break_until", "timer_on_break"]:
         if key in st.session_state:
             del st.session_state[key]
     st.balloons()
