@@ -1,3 +1,5 @@
+"""Sapere — Tutores de estudio con IA. Dark theme premium, clean layout."""
+
 import streamlit as st
 from datetime import datetime
 
@@ -15,197 +17,190 @@ ensure_schema()
 
 if "user_settings" not in st.session_state:
     st.session_state.user_settings = {
-        "wake_time": "04:00",
-        "commute_start": "04:45",
-        "school_start": "07:00",
-        "school_end": "13:00",
-        "home_arrival": "16:00",
-        "study_window_start": "17:00",
-        "study_window_end": "20:30",
-        "bed_time": "21:00",
+        "wake_time": "04:00", "commute_start": "04:45",
+        "home_arrival": "16:00", "study_window_start": "17:00",
+        "study_window_end": "20:30", "bed_time": "21:00",
     }
 
-if "onboarding_done" not in st.session_state:
-    st.session_state.onboarding_done = False
-
-
-def _get_priority(mastery: int, due: int, total: int) -> tuple[str, str, str]:
-    if mastery < 40 or (total > 0 and due > total * 0.5):
-        return "🔴 ALTA", "A", "red"
-    elif mastery < 70 or (total > 0 and due > total * 0.3):
-        return "🟡 MEDIA", "B", "yellow"
-    else:
-        return "🟢 BAJA", "C", "green"
-
+MODE = {"academic": "🎓", "language": "🌍", "tech": "💻", "code": "🐍"}
+MODE_COLORS = {"academic": "#58a6ff", "language": "#7ee787", "tech": "#d29922", "code": "#bc8cff"}
 
 with st.sidebar:
-    st.title("🧠 Sapere")
+    st.markdown('<div style="text-align:center;padding:12px 0">', unsafe_allow_html=True)
+    st.markdown("### 🧠 Sapere")
     streak = get_streak_count()
-    st.metric("🔥 Racha", f"{streak} dias")
-    st.markdown("---")
-
-    page = st.radio(
-        "Navegacion",
-        ["Inicio", "Subir Temario", "🚌 Modo Traslado", "🌙 Cierre Nocturno", "⚙ Configuracion"],
-        label_visibility="collapsed",
-    )
-
-    st.markdown("---")
-    st.caption(f"Modelo: {config.gemini_model}")
-
-if page == "Inicio":
-    st.title("🧠 Sapere")
-    st.caption("Tu tutor cognitivo de elite — neurociencia + IA para aprender al maximo.")
-
-    subjects = get_all_subjects()
-    if not subjects:
-        st.info("No tienes materias todavia. Ve a 'Subir Temario' para empezar.")
+    if streak > 0:
+        st.metric("🔥 Racha", f"{streak} días")
     else:
-        subjects_a, subjects_b, subjects_c = [], [], []
-        icon_map = {"academic": "🎓", "language": "🌍", "tech": "💻", "code": "🐍"}
+        st.caption("Comienza tu racha hoy")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    page = st.radio("", ["🏠 Dashboard", "📤 Nueva Materia", "🚌 Traslado", "🌙 Cierre", "⚙ Ajustes"], label_visibility="collapsed")
+
+    st.markdown("---")
+    st.caption(f"⚡ {config.gemini_model}")
+
+if page == "🏠 Dashboard":
+    subjects = get_all_subjects()
+    all_due = get_due_flashcards(subject_id=None, limit=999)
+
+    st.markdown('<div style="max-width:960px;margin:0 auto">', unsafe_allow_html=True)
+
+    now = datetime.now()
+    hour = now.hour
+    if 4 <= hour < 12:
+        greeting = "Buenos días"
+    elif 12 <= hour < 19:
+        greeting = "Buenas tardes"
+    else:
+        greeting = "Buenas noches"
+
+    st.markdown(f"## {greeting} 👋")
+
+    c1, c2, c3, c4 = st.columns(4)
+    total_all = sum(get_subject_progress(s["id"]).get("total_flashcards", 0) or 0 for s in subjects)
+    total_due = len(all_due)
+    with c1:
+        st.metric("📚 Materias", len(subjects))
+    with c2:
+        st.metric("📝 Pendientes", total_due)
+    with c3:
+        st.metric("🗂 Total", total_all)
+    with c4:
+        st.metric("🔥 Racha", f"{streak} d")
+
+    st.markdown("---")
+
+    if not subjects:
+        st.info("🎉 Bienvenido a Sapere. Ve a 'Nueva Materia' para crear tu primera materia.")
+    else:
+        st.subheader("Tus materias")
 
         for s in subjects:
             p = get_subject_progress(s["id"])
             mastery = int(p.get("avg_mastery", 0) * 100) if p.get("avg_mastery") else 0
             due = p.get("due_flashcards", 0) or 0
             total = p.get("total_flashcards", 0) or 0
-            _, level, _ = _get_priority(mastery, due, total)
-            item = (s, p, mastery, due, total)
-            if level == "A":
-                subjects_a.append(item)
-            elif level == "B":
-                subjects_b.append(item)
+            mode = s.get("mode", "academic")
+            color = MODE_COLORS.get(mode, "#58a6ff")
+            icon = MODE.get(mode, "🎓")
+
+            if mastery >= 80:
+                priority_color = "#7ee787"
+                priority_badge = "Dominado"
+            elif mastery >= 50:
+                priority_color = "#d29922"
+                priority_badge = "En progreso"
+            elif total > 0:
+                priority_color = "#f85149"
+                priority_badge = "Prioritario"
             else:
-                subjects_c.append(item)
+                priority_color = "#8b949e"
+                priority_badge = "Nuevo"
 
-        for label, lst in [("🔴 Prioridad ALTA — Enfocate aqui", subjects_a), ("🟡 Prioridad MEDIA — Manten al dia", subjects_b), ("🟢 Prioridad BAJA — Repaso ligero", subjects_c)]:
-            if not lst:
-                continue
-            st.markdown(f"### {label}")
-            for s, p, mastery, due, total in lst:
-                with st.container(border=True):
-                    col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
-                    with col1:
-                        icon = icon_map.get(s.get("mode", "academic"), "🎓")
-                        st.write(f"{icon} **{s['name']}**")
-                    with col2:
-                        st.metric("Dominio", f"{mastery}%")
-                    with col3:
-                        st.write(f"📝 {due} pend.")
-                    with col4:
-                        if total > 0:
-                            if st.button("▶ Estudiar", key=f"sbj_{s['id']}"):
-                                st.session_state.study_subject_id = s["id"]
-                                st.rerun()
+            with st.container(border=True):
+                r1_cols = st.columns([4, 1, 1, 1])
+                with r1_cols[0]:
+                    st.markdown(f"### {icon} {s['name']}")
+                with r1_cols[1]:
+                    st.metric("Dominio", f"{mastery}%")
+                with r1_cols[2]:
+                    st.markdown(f"<span style='background:{priority_color}20;color:{priority_color};padding:4px 10px;border-radius:8px;font-size:13px;font-weight:600'>{priority_badge}</span>", unsafe_allow_html=True)
+                with r1_cols[3]:
+                    st.write(f"📝 {due}" if due > 0 else "✅")
 
-    st.markdown("---")
-    st.subheader("📊 Resumen semanal")
-    total_due = sum(get_subject_progress(s["id"]).get("due_flashcards", 0) or 0 for s in get_all_subjects())
-    total_all = sum(get_subject_progress(s["id"]).get("total_flashcards", 0) or 0 for s in get_all_subjects())
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Materias", len(subjects) if subjects else 0)
-    c2.metric("Pendientes hoy", total_due)
-    c3.metric("Total flashcards", total_all)
+                if total > 0:
+                    pct = mastery / 100 if mastery > 0 else 0.01
+                    st.markdown(f"""<div style="height:4px;background:#21262d;border-radius:2px;margin:4px 0 8px">
+                    <div style="width:{pct*100}%;height:100%;background:{color};border-radius:2px;transition:width 0.5s"></div></div>""", unsafe_allow_html=True)
 
-elif page == "Subir Temario":
+                btn_cols = st.columns([1, 1, 1, 3])
+                with btn_cols[0]:
+                    if total > 0 and st.button("📝 Estudiar", key=f"go_{s['id']}", use_container_width=True):
+                        st.session_state.study_subject_id = s["id"]
+                        st.rerun()
+                with btn_cols[1]:
+                    if due < 5 and total > 0:
+                        st.caption("Al día")
+                with btn_cols[2]:
+                    topics = __import__("sapere.infrastructure.database", fromlist=[""]).get_topics_for_subject(s["id"])
+                    st.caption(f"{len(topics)} temas")
+
+        st.markdown("---")
+        st.caption(f"💡 {total_due} flashcards pendientes. Cada 20 min de estudio = ~15 flashcards. Tardarías ~{max(1, total_due // 15) * 20} min en ponerlas al día.")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+elif page == "📤 Nueva Materia":
     from sapere.ui.upload import show_upload_page
     show_upload_page()
 
-elif page == "🚌 Modo Traslado":
+elif page == "🚌 Traslado":
     from sapere.ui.mobile import show_mobile_page
     show_mobile_page()
 
-elif page == "🌙 Cierre Nocturno":
+elif page == "🌙 Cierre":
     st.title("🌙 Cierre Nocturno")
-    st.caption("Sesion ligera antes de dormir. Las flashcards mas debiles del dia. Sin presion.")
+    st.caption("Repaso ligero antes de dormir. Sin presión, sin ejercicios.")
     now = datetime.now()
     if now.hour < 20:
-        st.info("El cierre nocturno es mas efectivo entre 8-10 PM, justo antes de dormir.")
+        st.info("Más efectivo entre 8-10 PM, justo antes de dormir.")
     all_due = get_due_flashcards(subject_id=None, limit=10)
     if not all_due:
-        st.success("Sin flashcards pendientes. Buen trabajo!")
+        st.success("✨ Sin pendientes. ¡Excelente día!")
         st.balloons()
     else:
-        st.write(f"🔖 {len(all_due)} flashcards fragiles para esta noche.")
-        for key in ["night_active", "night_idx", "night_show", "night_count"]:
-            if key not in st.session_state:
-                st.session_state[key] = False if "show" in key or "active" in key else 0
-
-        if not st.session_state.night_active:
-            if st.button("🌙 Iniciar cierre nocturno", type="primary", use_container_width=True):
-                st.session_state.night_active = True
-                st.session_state.night_idx = 0
-                st.session_state.night_show = False
-                st.session_state.night_count = 0
+        st.write(f"🔖 {len(all_due)} flashcards para esta noche.")
+        for k in ["n_active", "n_idx", "n_show", "n_count"]:
+            if k not in st.session_state:
+                st.session_state[k] = False if "show" in k or "active" in k else 0
+        if not st.session_state.n_active:
+            if st.button("🌙 Iniciar", type="primary", use_container_width=True):
+                st.session_state.n_active = True; st.session_state.n_idx = 0
+                st.session_state.n_show = False; st.session_state.n_count = 0
                 st.rerun()
         else:
-            idx = st.session_state.night_idx
+            idx = st.session_state.n_idx
             if idx >= len(all_due):
-                st.success(f"🌙 {st.session_state.night_count} flashcards. A dormir!")
+                st.success(f"🌙 {st.session_state.n_count} repasadas. ¡A dormir!")
                 st.balloons()
-                for k in ["night_active", "night_idx", "night_show", "night_count"]:
-                    del st.session_state[k]
+                for k in ["n_active", "n_idx", "n_show", "n_count"]: del st.session_state[k]
             else:
                 fc = all_due[idx]
-                st.progress((idx + 1) / len(all_due))
-                st.markdown("---")
+                st.progress((idx+1)/len(all_due))
                 st.markdown(f"### 🌙 {fc['question']}")
-                if not st.session_state.night_show:
+                if not st.session_state.n_show:
                     if st.button("Revelar", type="primary", use_container_width=True):
-                        st.session_state.night_show = True
-                        st.rerun()
+                        st.session_state.n_show = True; st.rerun()
                 else:
                     st.markdown(f"#### {fc['answer']}")
-                    st.caption("Cierra los ojos, repite mentalmente la respuesta.")
                     from sapere.study.flashcard import review_flashcard
                     from sapere.domain.enums import ReviewScore
                     review_flashcard(fc["id"], ReviewScore.HARD)
-                    st.session_state.night_count += 1
-                    st.session_state.night_idx += 1
-                    st.session_state.night_show = False
-                    st.rerun()
+                    st.session_state.n_count += 1; st.session_state.n_idx += 1
+                    st.session_state.n_show = False; st.rerun()
 
-elif page == "⚙ Configuracion":
-    st.title("⚙ Configuracion")
-    st.caption("Ajusta tus horarios. Sapere se adapta automaticamente.")
-
-    st.subheader("⏰ Horario personal")
-
-    settings = st.session_state.user_settings
-
-    col1, col2 = st.columns(2)
-    with col1:
-        settings["wake_time"] = st.text_input("Hora de despertar", settings["wake_time"])
-        settings["commute_start"] = st.text_input("Salida de casa", settings["commute_start"])
-        settings["school_start"] = st.text_input("Entrada a clase", settings["school_start"])
-        settings["home_arrival"] = st.text_input("Llegada a casa", settings["home_arrival"])
-    with col2:
-        settings["study_window_start"] = st.text_input("Inicio estudio en casa", settings["study_window_start"])
-        settings["study_window_end"] = st.text_input("Fin estudio en casa", settings["study_window_end"])
-        settings["bed_time"] = st.text_input("Hora de dormir", settings["bed_time"])
-
-    st.subheader("🤖 IA")
-    st.write(f"Modelo: **{config.gemini_model}**")
-    st.write(f"API Key: {'Configurada ✅' if config.gemini_api_key else 'Falta ❌'}")
-
-    st.subheader("📊 Estadisticas")
-    from sapere.infrastructure.database import get_db_path
-    db_path = get_db_path()
-    if __import__("os").path.exists(db_path):
-        db_size = __import__("os").path.getsize(db_path) / 1024
-        st.write(f"Base de datos: `{db_path}` ({db_size:.1f} KB)")
-    else:
-        st.write("Base de datos: No creada aun")
-
-    if st.button("💾 Guardar configuracion", type="primary", use_container_width=True):
-        st.session_state.user_settings = settings
-        st.success("Configuracion guardada.")
-        st.balloons()
+elif page == "⚙ Ajustes":
+    st.title("⚙ Ajustes")
+    st.caption("Tus horarios. Sapere se adapta.")
+    s = st.session_state.user_settings
+    c1, c2 = st.columns(2)
+    with c1:
+        s["wake_time"] = st.text_input("Despertar", s["wake_time"])
+        s["commute_start"] = st.text_input("Salida", s["commute_start"])
+        s["home_arrival"] = st.text_input("Llegada", s["home_arrival"])
+    with c2:
+        s["study_window_start"] = st.text_input("Inicio estudio", s["study_window_start"])
+        s["study_window_end"] = st.text_input("Fin estudio", s["study_window_end"])
+        s["bed_time"] = st.text_input("Dormir", s["bed_time"])
+    st.caption(f"Modelo: {config.gemini_model}")
+    if st.button("💾 Guardar", type="primary"):
+        st.session_state.user_settings = s
+        st.success("Guardado.")
 
 if "study_subject_id" in st.session_state and st.session_state.study_subject_id:
     with st.sidebar:
-        if st.button("← Volver al inicio"):
-            st.session_state.study_subject_id = None
-            st.rerun()
+        if st.button("← Dashboard", use_container_width=True):
+            st.session_state.study_subject_id = None; st.rerun()
     from sapere.ui.study import show_study_page
     show_study_page(st.session_state.study_subject_id)

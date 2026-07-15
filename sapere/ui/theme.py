@@ -1,104 +1,104 @@
-"""Estilos globales de Sapere — Dark theme profesional con glassmorphism."""
+"""Estilos globales de Sapere — Dark theme premium."""
 
 GLOBAL_CSS = """
 <style>
-/* === BASE === */
-.stApp { background: linear-gradient(135deg, #0d1117 0%, #161b22 100%); }
+:root {
+    --bg: #0a0e14;
+    --surface: #131820;
+    --border: #1e2733;
+    --text: #bfc6d0;
+    --text-dim: #6e7681;
+    --blue: #58a6ff;
+    --green: #3fb950;
+    --orange: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+}
 
-/* === HEADERS === */
-h1 { color: #58a6ff !important; font-weight: 700 !important; letter-spacing: -0.5px; }
-h2 { color: #c9d1d9 !important; font-weight: 600 !important; }
-h3 { color: #8b949e !important; font-weight: 500 !important; }
+.stApp { background: var(--bg); }
 
-/* === CARDS === */
+h1, h2, h3 { font-weight: 600 !important; letter-spacing: -0.3px !important; }
+h1 { font-size: 2rem !important; }
+h2 { font-size: 1.3rem !important; color: var(--text) !important; }
+h3 { font-size: 1.1rem !important; color: var(--text-dim) !important; }
+
+section[data-testid="stSidebar"] {
+    background: var(--surface) !important;
+    border-right: 1px solid var(--border) !important;
+}
+
 div[data-testid="stVerticalBlock"] > div[style*="border"] {
-    background: linear-gradient(145deg, rgba(22,27,34,0.9) 0%, rgba(13,17,23,0.95) 100%) !important;
-    border: 1px solid rgba(88,166,255,0.15) !important;
-    border-radius: 16px !important;
-    backdrop-filter: blur(12px) !important;
-    transition: transform 0.2s, box-shadow 0.2s !important;
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    padding: 16px 20px !important;
+    transition: border-color 0.2s !important;
 }
 div[data-testid="stVerticalBlock"] > div[style*="border"]:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 32px rgba(88,166,255,0.08) !important;
+    border-color: rgba(88,166,255,0.25) !important;
 }
 
-/* === METRICS === */
-[data-testid="stMetricValue"] { font-weight: 700 !important; }
-[data-testid="stMetricLabel"] { color: #8b949e !important; }
+[data-testid="stMetricValue"] { font-size: 1.4rem !important; font-weight: 700 !important; color: var(--text) !important; }
+[data-testid="stMetricLabel"] { font-size: 0.75rem !important; color: var(--text-dim) !important; }
+[data-testid="stMetricDelta"] { display: none !important; }
 
-/* === SIDEBAR === */
-section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0d1117 0%, #161b22 100%) !important;
-    border-right: 1px solid rgba(48,54,61,0.5) !important;
-}
-
-/* === BUTTONS === */
 div.stButton > button {
-    border-radius: 10px !important;
-    font-weight: 600 !important;
-    transition: all 0.2s !important;
-    letter-spacing: -0.3px !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    font-size: 0.85rem !important;
+    transition: all 0.15s !important;
+    padding: 0.4rem 1rem !important;
 }
 div.stButton > button[kind="primary"] {
-    background: linear-gradient(135deg, #238636, #2ea043) !important;
-    border: none !important;
-    box-shadow: 0 4px 12px rgba(35,134,54,0.3) !important;
+    background: #238636 !important;
+    border: 1px solid rgba(63,185,80,0.3) !important;
+    color: white !important;
 }
 div.stButton > button[kind="primary"]:hover {
-    box-shadow: 0 6px 20px rgba(35,134,54,0.4) !important;
-    transform: translateY(-1px) !important;
+    background: #2ea043 !important;
 }
 
-/* === PROGRESS BARS === */
 div[data-testid="stProgress"] > div {
-    background: rgba(88,166,255,0.15) !important;
-    border-radius: 6px !important;
+    background: rgba(88,166,255,0.1) !important;
+    border-radius: 3px !important;
 }
 div[data-testid="stProgress"] > div > div {
-    background: linear-gradient(90deg, #58a6ff, #79c0ff) !important;
-    border-radius: 6px !important;
+    background: var(--blue) !important;
+    border-radius: 3px !important;
 }
 
-/* === TABS === */
 div[data-testid="stTabs"] button {
-    border-radius: 8px 8px 0 0 !important;
-    padding: 10px 20px !important;
+    color: var(--text-dim) !important;
     font-weight: 500 !important;
-    transition: all 0.2s !important;
 }
 div[data-testid="stTabs"] button[aria-selected="true"] {
-    background: rgba(88,166,255,0.12) !important;
-    border-bottom: 2px solid #58a6ff !important;
-    color: #58a6ff !important;
+    color: var(--blue) !important;
+    border-bottom: 2px solid var(--blue) !important;
 }
 
-/* === TEXT AREAS === */
-textarea { border-radius: 10px !important; border: 1px solid #30363d !important; }
+textarea, input {
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 8px !important;
+    color: var(--text) !important;
+}
 
-/* === SELECT BOX === */
-div[data-testid="stSelectbox"] > div { border-radius: 10px !important; }
-
-/* === SUCCESS/ERROR === */
 div[data-testid="stAlert"] {
-    border-radius: 12px !important;
-    border: 1px solid rgba(48,54,61,0.5) !important;
+    border-radius: 10px !important;
+    border: 1px solid var(--border) !important;
+    background: var(--surface) !important;
 }
 
-/* === BALLOONS === */
-@keyframes floatUp {
-    0% { opacity: 0; transform: translateY(100vh) scale(0.5); }
-    50% { opacity: 1; }
-    100% { opacity: 0; transform: translateY(-10vh) scale(1.2); }
-}
+.stSelectbox > div > div { border-radius: 8px !important; }
+.stRadio > div { gap: 2px !important; }
+.stRadio label { padding: 6px 12px !important; border-radius: 6px !important; font-size: 0.85rem !important; }
 
-/* === SESSION BADGE === */
-.session-active {
-    animation: pulse 2s infinite;
-}
-@keyframes pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(88,166,255,0.4); }
-    50% { box-shadow: 0 0 0 8px rgba(88,166,255,0); }
+.caption { font-size: 0.8rem; color: var(--text-dim); }
+
+@media (max-width: 768px) {
+    h1 { font-size: 1.4rem !important; }
+    h2 { font-size: 1.1rem !important; }
+    h3 { font-size: 1rem !important; }
 }
 </style>
 """
