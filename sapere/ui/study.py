@@ -1,17 +1,29 @@
+import time
+
 import streamlit as st
 
 from sapere.infrastructure import database
-from sapere.domain.enums import ReviewScore
+from sapere.domain.enums import ExerciseLevel, ReviewScore
 from sapere.study.flashcard import get_due_flashcards, get_interleaved_flashcards, review_flashcard
 from sapere.study.feynman import evaluate_explanation
 from sapere.study.exercises import generate_exercises, generate_curiosity_gap
-from sapere.study.timer import start_timer, render_timer, get_current_energy, adjust_next_block_duration
+from sapere.study.timer import start_timer, render_timer, get_current_energy
+from sapere.study.session import save_session_state, load_session_state, clear_session_save, resume_flashcards
 from sapere.llm.gemini import GeminiFlash
 from sapere.llm.base import LLMProvider
 
 
 MODE_ICONS = {"academic": "🎓", "language": "🌍", "tech": "💻"}
 MODE_LABELS = {"academic": "Academico", "language": "Idiomas", "tech": "Tech"}
+
+
+def _safe_call(fn, *args, **kwargs):
+    """Wrapper that gracefully handles errors without crashing the session."""
+    try:
+        return fn(*args, **kwargs)
+    except Exception as e:
+        st.error(f"Error: {str(e)[:200]}. Intenta de nuevo.")
+        return None
 
 
 def show_study_page(subject_id: int):
@@ -34,11 +46,33 @@ def show_study_page(subject_id: int):
     col1.metric("Dominio", f"{mastery}%")
     col2.metric("Pendientes", due)
     col3.metric("Total", total)
-    col4.metric("Energia", {"LOW": "😫", "MEDIUM": "😐", "HIGH": "💪"}.get(
-        get_current_energy().name if hasattr(get_current_energy(), 'name') else "MEDIUM", "😐"
-    ))
+    current_energy = get_current_energy()
+    col4.metric("Energia", {"LOW": "😫", "MEDIUM": "😐", "HIGH": "💪"}.get(current_energy.name, "😐"))
 
     st.markdown("---")
+
+    saved = load_session_state()
+    if saved and saved.get("subject_id") == subject_id and not st.session_state.get("session_active"):
+        idx = saved.get("flashcard_index", 0)
+        total = len(saved.get("flashcard_ids", []))
+        if total > 0:
+            with st.container(border=True):
+                st.warning(f"🎯 Tienes una sesion sin terminar: flashcard {idx + 1} de {total}")
+                c1, c2 = st.columns(2)
+                with c1:
+                    if st.button("▶ Reanudar sesion", type="primary", use_container_width=True):
+                        st.session_state.flashcards = resume_flashcards(saved)
+                        st.session_state.current_flashcard_index = idx
+                        st.session_state.show_answer = False
+                        st.session_state.reviewed_count = saved.get("reviewed_count", 0)
+                        st.session_state.session_active = True
+                        st.session_state.study_session_id = saved.get("session_id")
+                        start_timer(50)
+                        st.rerun()
+                with c2:
+                    if st.button("🗑 Descartar sesion", use_container_width=True):
+                        clear_session_save()
+                        st.rerun()
 
     tab_names = ["📝 Flashcards", "✏️ Ejercicios", "🗣 Feynman", "📊 Examen"]
     if mode == "language":
@@ -65,7 +99,9 @@ def show_study_page(subject_id: int):
     with tabs[3]:
         _show_exam_tab(subject_id, subject, mode)
 
-    render_timer()
+    block_ended = render_timer()
+    if block_ended:
+        clear_session_save()
 
 
 def _init_flashcard_session():
@@ -206,6 +242,15 @@ def _process_review(flashcard_id: int, score: ReviewScore, confidence: int | Non
     st.session_state.reviewed_count += 1
     st.session_state.show_answer = False
     st.session_state.current_flashcard_index += 1
+
+    if st.session_state.flashcards:
+        save_session_state(
+            subject_id=st.session_state.get("study_subject_id", 0),
+            session_id=st.session_state.study_session_id,
+            flashcard_index=st.session_state.current_flashcard_index,
+            flashcard_ids=[fc["id"] for fc in st.session_state.flashcards],
+            reviewed_count=st.session_state.reviewed_count,
+        )
     st.rerun()
 
 
@@ -215,6 +260,7 @@ def _end_session():
         energy = get_current_energy()
         database.end_study_session(st.session_state.study_session_id, energy_end=int(energy))
         database.record_daily_streak(minutes=st.session_state.reviewed_count * 2, sessions=1, topics=st.session_state.reviewed_count)
+    clear_session_save()
     for key in ["session_active", "flashcards", "current_flashcard_index", "show_answer", "reviewed_count", "study_session_id"]:
         if key in st.session_state:
             del st.session_state[key]
@@ -257,7 +303,7 @@ def _show_exercises_tab(subject_id: int, subject: dict, mode: str):
                     exs = generate_exercises(
                         llm, selected, level=ExerciseLevel(level_map[level]),
                         scaffolding=scaffold_map[scaffold], count=3,
-                        context=topics[0].get("description", "") if topics else "",
+                        context=topic_names[selected].get("description", "") if topics else "",
                     )
                     st.session_state.exercises = exs
                     st.session_state.ex_index = 0
@@ -587,5 +633,5 @@ Devuelve: {{{{"scenario": "...", "command": "...", "explanation": "..."}}}}""")
                 st.rerun()
 
 
-import time
-from sapere.domain.enums import ExerciseLevel
+
+
