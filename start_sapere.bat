@@ -1,6 +1,9 @@
 @echo off
-cd /d "C:\Users\PRIDE BEETLE BLACK\sapere"
+cd /d "%~dp0"
 echo 🧠 Iniciando Sapere...
-start http://localhost:8501
-py -m streamlit run main.py --server.headless true
+echo.
+echo No cierres esta ventana mientras estudias.
+echo La pagina se abrira en tu navegador automaticamente.
+echo.
+py -m streamlit run main.py
 pause

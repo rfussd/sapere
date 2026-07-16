@@ -15,6 +15,11 @@ st.set_page_config(**PAGE_CONFIG)
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 ensure_schema()
 
+
+def _go_study(subject_id):
+    st.session_state.study_subject_id = subject_id
+    st.rerun()
+
 MODE = {"academic": "🎓", "language": "🌍", "tech": "💻", "code": "🐍"}
 COLORS = {
     "academic": {"bg": "#1a2332", "accent": "#58a6ff", "glow": "rgba(88,166,255,0.3)"},
@@ -120,9 +125,8 @@ else:
                         <div style="font-size:0.75rem;color:#8b949e">flashcards pendientes</div>
                         </div>
                         """, unsafe_allow_html=True)
-                        st.button(f"▶ Estudiar {s['name']}", key=f"tp_{s['id']}", type="primary", use_container_width=True)
-                        if st.session_state.get(f"tp_{s['id']}"):
-                            _go_study(s['id'])
+                        if st.button(f"▶ Estudiar {s['name']}", key=f"tp_{s['id']}", type="primary", use_container_width=True):
+                            _go_study(s["id"])
 
                 st.caption("**Despues:** " + "  ·  ".join(f"{MODE.get(i[4].get('mode','academic'),'🎓')} {i[4]['name']}" for i in plan["tomorrow"]))
 
@@ -153,9 +157,8 @@ else:
                     <div style="font-size:0.7rem;color:#8b949e">{item['mastery']}% dominio</div>
                     </div>
                     """, unsafe_allow_html=True)
-                    st.button(f"▶", key=f"subj_{item['id']}", use_container_width=True)
-                    if st.session_state.get(f"subj_{item['id']}"):
-                        _go_study(item['id'])
+                    if st.button(f"▶", key=f"subj_{item['id']}", use_container_width=True):
+                        _go_study(item["id"])
 
     elif page == "Nueva Materia":
         from sapere.ui.upload import show_upload_page
@@ -206,8 +209,3 @@ else:
             s["bed_time"] = st.text_input("Dormir", s["bed_time"])
         if st.button("💾 Guardar", type="primary"):
             st.session_state.user_settings = s; st.success("Guardado.")
-
-
-def _go_study(subject_id):
-    st.session_state.study_subject_id = subject_id
-    st.rerun()
