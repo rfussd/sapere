@@ -48,12 +48,13 @@ def calculate_plan(upiicsa_start: str = "") -> dict:
         total = progress.get("total_flashcards", 0) or 0
         mastery = progress.get("avg_mastery", 0) or 0
         days_since = get_days_since_study(s["id"])
+        days_since = max(0, days_since or 0)
 
         if total == 0:
             continue
 
-        urgency = (due * 2) + ((days_since ** 1.5) * 3) - (mastery * 30)
-        urgency = max(0, urgency)
+        urgency = (due * 2) + (pow(days_since, 1.5) * 3) - (mastery * 30)
+        urgency = max(0.0, urgency)
 
         scored.append((urgency, due, days_since, mastery, s))
 
