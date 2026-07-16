@@ -60,7 +60,7 @@ if st.session_state.study_subject_id:
 else:
     # DASHBOARD MODE
     nav_icons = ["🏠", "📤", "🚌", "🌙", "⚙"]
-    nav_labels = ["Dashboard", "Nueva Materia", "Traslado", "Cierre", "Ajustes"]
+    nav_labels = ["Dashboard", "Nueva Materia", "Traslado", "Cierre", "Guia", "Ajustes"]
     with st.sidebar:
         st.markdown('<div style="text-align:center;padding:10px 0">', unsafe_allow_html=True)
         st.markdown("## 🧠 Sapere")
@@ -197,6 +197,127 @@ else:
                         review_flashcard(fc["id"], ReviewScore.HARD)
                         st.session_state.n_count += 1; st.session_state.n_idx += 1
                         st.session_state.n_show = False; st.rerun()
+    elif page == "Guia":
+        st.title("📖 Guia de aprendizaje")
+        st.caption("Como usar cada metodo segun lo que quieres aprender.")
+
+        st.markdown("---")
+        st.markdown("## 🎓 Modo Academico")
+        st.markdown("*Para: materias escolares, teoria, conceptos, examenes*")
+        st.markdown("""
+        **Metodo principal: Active Recall + SM-2** (80% de tu tiempo)
+        - 📝 Flashcards diarias: pregunta → intentas recordar → revelas → calificas 1-4
+        - El algoritmo SM-2 programa automaticamente el repaso segun tu desempeno
+        - Las que fallas aparecen mas seguido. Las que dominas se espacian.
+
+        **Metodo de verificacion: Feynman** (2-3 veces por semana)
+        - 🗣 Explica el tema con tus palabras, como si tuvieras 10 anios
+        - La IA detecta que entendiste, que te falto, que confundiste
+        - No avances al siguiente tema hasta pasar el Feynman
+
+        **Metodo de aplicacion: Ejercicios** (cuando domines el recall)
+        - ✏️ 3 niveles: basico → medio → avanzado (tipo examen)
+        - Scaffolding progresivo: de ejemplo resuelto a problema sin ayuda
+
+        **Metodo de consolidacion: Examen simulado** (finde de semana)
+        - 📊 Cronometrado, sin ayudas, mezcla todos los temas
+        - Simula las condiciones reales del examen de UPIICSA
+        """)
+
+        st.markdown("---")
+        st.markdown("## 🌍 Modo Idiomas")
+        st.markdown("*Para: vocabulario, gramatica, frases, pronunciacion*")
+        st.markdown("""
+        **Metodo principal: Flashcards con contexto real**
+        - 📝 Nunca estudies palabras aisladas. Siempre en frases completas.
+        - La pregunta muestra la frase en el idioma original
+        - La respuesta muestra la traduccion + pronunciacion
+        - Califica 1-4 (SM-2 se adapta automaticamente)
+
+        **Metodo complementario: Cloze Deletion**
+        - 🔤 Oraciones con huecos: "Je ___ un cafe" → "prends"
+        - Forza el active recall en contexto gramatical real
+        - Mas efectivo que Duolingo porque usa repeticion espaciada real
+
+        **Metodo de verificacion: Feynman**
+        - 🗣 Explica la regla gramatical como si enseniaras a alguien
+        - La IA verifica si realmente entendiste la regla
+
+        **Tips de neurociencia para idiomas:**
+        - Estudia vocabulario de NOCHE (se consolida en el sueno SWS)
+        - Practica speaking/pronunciacion de DIA (consolidacion REM)
+        - Intervalos mas cortos al inicio (1, 3, 7 dias) para vocabulario nuevo
+        """)
+
+        st.markdown("---")
+        st.markdown("## 💻 Modo Tech Skills")
+        st.markdown("*Para: comandos Linux, herramientas, sintaxis, procedimientos*")
+        st.markdown("""
+        **Metodo principal: Flashcards de comando/sintaxis**
+        - 📝 La pregunta describe un escenario o problema
+        - La respuesta es el COMANDO EXACTO (ej: "ls -la")
+        - El hint incluye banderas comunes o alternativas
+
+        **Metodo complementario: Terminal Practice**
+        - 🖥 Escenarios simulados reales
+        - Escribe el comando como si estuvieras en una terminal real
+        - Feedback inmediato: correcto o incorrecto
+        - Refuerza la memoria procedimental (muscular)
+
+        **Metodo de verificacion: Feynman tecnico**
+        - 🗣 Explica el concepto como si fuera el primer dia de alguien en sistemas
+        - Obligatorio para temas complejos (subnetting, permisos, etc.)
+
+        **Tips para tech skills:**
+        - Alterna estudio teorico (flashcards) con practico (terminal)
+        - Usa interleaving: mezcla comandos de diferentes categorias
+        - Prioriza SABER HACER sobre saber definir
+        """)
+
+        st.markdown("---")
+        st.markdown("## 🐍 Modo Programacion")
+        st.markdown("*Para: aprender sintaxis, conceptos de programacion, logica*")
+        st.markdown("""
+        **Metodo principal: Flashcards de sintaxis + concepto**
+        - 📝 Preguntas practicas: "Escribe una funcion que..." o "Que hace este codigo?"
+        - Respuestas con snippets de codigo real, no definiciones
+        - Los hints incluyen errores comunes de principiantes
+
+        **Metodo complementario: Practicar codigo**
+        - 🐍 Ejercicios interactivos generados por IA
+        - Escribe tu solucion, recibe feedback inmediato
+        - "Encuentra el error": ejercicios donde debes detectar bugs
+
+        **Metodo de verificacion: Feynman**
+        - 🗣 Explica el concepto de programacion en lenguaje simple
+        - Si no puedes explicarlo simplemente, no lo entiendes
+
+        **Ruta recomendada para aprender Python:**
+        1. Flashcards de sintaxis basica (20 min/dia)
+        2. Practicar codigo con ejercicios generados (30 min/dia)
+        3. Feynman para conceptos tecnicos (POO, herencia, decoradores)
+        4. Complementa con los archivos learning/dia1.py al dia5.py
+        5. Despues del dia 5: construye un proyecto propio
+        """)
+
+        st.markdown("---")
+        st.markdown("## 🧠 Principios de neurociencia integrados")
+        st.markdown("""
+        | Principio | Como se aplica en Sapere |
+        |-----------|-------------------------|
+        | **Active Recall** | Intentas recordar ANTES de ver la respuesta |
+        | **Spaced Repetition (SM-2)** | Algoritmo que calcula el momento exacto de repaso |
+        | **Curva del Olvido (Ebbinghaus)** | Repasas justo antes de olvidar |
+        | **Feynman Technique** | Explicas con tus palabras, la IA verifica |
+        | **Interleaving** | Mezclas temas viejos y nuevos (60/40) |
+        | **Desirable Difficulty** | Ejercicios progresivos que te sacan de la zona de confort |
+        | **Curiosity Gap** | Acertijo antes de cada tema nuevo |
+        | **Pre-testing** | Intentas responder antes de que te den la respuesta |
+        | **Sleep Consolidation** | Cierre nocturno antes de dormir |
+        | **Pomodoro** | Bloques de 50 min con breaks forzados de 5 min |
+        | **Scaffolding** | Ayuda que se va retirando gradualmente |
+        """)
+
     elif page == "Ajustes":
         st.title("⚙ Ajustes")
         s = st.session_state.user_settings
