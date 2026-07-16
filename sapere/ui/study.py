@@ -91,11 +91,12 @@ def show_study_page(subject_id: int):
     st.markdown("---")
 
     with st.sidebar:
-        st.markdown("### ⚙ Opciones de estudio")
-        use_interleaving = st.checkbox("🧬 Interleaving", value=True, help="Mezcla 60% tema actual + 40% repaso de otros")
-        show_guide = st.checkbox("🧠 Ver guia de estudio", value=False)
-        if show_guide:
-            st.caption("**Flujo:** Flashcards diario → Feynman 2-3x/sem → Ejercicios cuando domines → Examen finde.")
+        st.markdown("### ⚙ Opciones")
+        if "use_interleaving" not in st.session_state:
+            st.session_state.use_interleaving = True
+        st.session_state.use_interleaving = st.checkbox("🧬 Interleaving", value=st.session_state.use_interleaving, help="60% tema actual + 40% repaso")
+        if st.checkbox("🧠 Ver guia", value=False, key="show_guide"):
+            st.caption("Flashcards diario → Feynman 2-3x/sem → Ejercicios → Examen finde.")
 
     saved = load_session_state()
     if saved and saved.get("subject_id") == subject_id and not st.session_state.get("session_active"):
@@ -178,7 +179,7 @@ def _show_flashcard_tab(subject_id: int, subject: dict, due: int, mode: str):
 
     if not st.session_state.session_active:
         if st.button("▶ Iniciar sesion", type="primary", use_container_width=True):
-            if use_interleaving:
+            if st.session_state.get("use_interleaving", True):
                 st.session_state.flashcards = get_interleaved_flashcards(subject_id=subject_id, limit=20)
             else:
                 st.session_state.flashcards = get_due_flashcards(subject_id=subject_id, limit=20)
@@ -231,53 +232,55 @@ def _show_flashcard_tab(subject_id: int, subject: dict, due: int, mode: str):
     st.markdown("---")
 
     if mode == "language":
-        st.markdown(f"### 🌍 {fc['question']}")
+        st.markdown(f"<h3 style='color:#ffffff;margin:16px 0;line-height:1.4'>🌍 {fc['question']}</h3>", unsafe_allow_html=True)
         if fc.get("hint"):
             st.caption(f"🔊 {fc['hint']}")
     elif mode == "tech":
-        st.markdown(f"### 💻 {fc['question']}")
+        st.markdown(f"<h3 style='color:#ffffff;margin:16px 0;line-height:1.4'>💻 {fc['question']}</h3>", unsafe_allow_html=True)
         if fc.get("hint"):
             st.caption(f"💡 {fc['hint']}")
     else:
-        st.markdown(f"### ❓ {fc['question']}")
+        st.markdown(f"<h3 style='color:#ffffff;margin:16px 0;line-height:1.4'>❓ {fc['question']}</h3>", unsafe_allow_html=True)
         if fc.get("hint"):
             st.caption(f"💡 {fc['hint']}")
 
     if not st.session_state.show_answer:
         use_pre_test = st.checkbox("🧪 Pre-testing: intenta responder antes de revelar", value=False, help="Intentar recordar ANTES de ver la respuesta genera conexiones neuronales mas fuertes (testing effect)")
         if use_pre_test:
-            user_guess = st.text_area("¿Que crees que es?", key=f"pretest_{idx}", height=80, placeholder="Escribe lo que recuerdes, aunque no estes seguro...")
-            if st.button("📝 Revelar respuesta", type="primary", use_container_width=True):
+            user_guess = st.text_area("¿Que crees que es?", key=f"pretest_{idx}", height=80, placeholder="Escribe lo que recuerdes...")
+            if st.button("📝 REVELAR RESPUESTA", type="primary", use_container_width=True):
                 st.session_state.show_answer = True
                 st.rerun()
         else:
-            if st.button("📝 Revelar respuesta", type="primary", use_container_width=True):
+            if st.button("📝 REVELAR RESPUESTA", type="primary", use_container_width=True):
                 st.session_state.show_answer = True
                 st.rerun()
     else:
         if mode == "tech":
             st.code(fc["answer"])
         else:
-            st.markdown(f"#### ✅ {fc['answer']}")
+            st.markdown(f"""<div style="background:#0d3320;border:1px solid #238636;border-radius:10px;padding:16px 20px;margin:12px 0">
+            <span style="color:#7ee787;font-size:1.05rem;line-height:1.5">{fc['answer']}</span>
+            </div>""", unsafe_allow_html=True)
 
         st.markdown("---")
-        st.markdown("**¿Que tan facil fue recordar?**")
+        st.markdown("**¿Que tan facil fue recordarlo?**")
 
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            if st.button("🔴 Ni idea", use_container_width=True):
+            if st.button("🔴\n\nNi idea", use_container_width=True, key=f"a_{idx}"):
                 _process_review(fc["id"], ReviewScore.AGAIN, None)
         with col2:
-            if st.button("🟠 Dificil", use_container_width=True):
+            if st.button("🟠\n\nDificil", use_container_width=True, key=f"h_{idx}"):
                 _process_review(fc["id"], ReviewScore.HARD, None)
         with col3:
-            if st.button("🟢 Bien", use_container_width=True):
+            if st.button("🟢\n\nBien", use_container_width=True, key=f"g_{idx}"):
                 _process_review(fc["id"], ReviewScore.GOOD, None)
         with col4:
-            if st.button("🟣 Facil", use_container_width=True):
+            if st.button("🟣\n\nFacil", use_container_width=True, key=f"e_{idx}"):
                 _process_review(fc["id"], ReviewScore.EASY, None)
 
-        st.caption("🔴=la vere pronto | 🟣=no la vere en mucho tiempo (SM-2)")
+        st.caption("🔴=repetir pronto | 🟣=no verla en mucho tiempo (SM-2)")
 
 
 def _process_review(flashcard_id: int, score: ReviewScore, confidence: int | None):
