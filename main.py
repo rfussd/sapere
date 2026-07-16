@@ -6,7 +6,7 @@ from datetime import datetime
 from sapere.config import config
 from sapere.infrastructure.database import (
     ensure_schema, get_all_subjects, get_streak_count, get_subject_progress,
-    get_due_flashcards,
+    get_due_flashcards, get_subject,
 )
 from sapere.ui.theme import GLOBAL_CSS, PAGE_CONFIG
 from sapere.study.planner import calculate_plan
