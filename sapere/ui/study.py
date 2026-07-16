@@ -90,21 +90,12 @@ def show_study_page(subject_id: int):
 
     st.markdown("---")
 
-    with st.expander("🧠 ¿Como usar este modo de estudio?", expanded=False):
-        st.markdown("""
-        **Flujo recomendado (basado en neurociencia del aprendizaje):**
-
-        1. 📝 **Flashcards** — Active Recall + SM-2. El 80% de tu estudio. Responde, revela, califica.
-           → Usalas a diario. Es lo que mas retencion genera.
-        2. 🗣 **Feynman** — Explica el tema con tus palabras. La IA te dice que entendiste, que te falto, que confundiste.
-           → Usalo cuando YA viste las flashcards del tema y crees que lo entiendes.
-        3. ✏️ **Ejercicios** — Aplica lo aprendido. 3 niveles progresivos con scaffolding.
-           → Usalos cuando domines el active recall (80%+ en flashcards del tema).
-        4. 📊 **Examen** — Simulacro real. Cronometrado, sin ayudas, mezcla todos los temas.
-           → Usalo 1-2 veces por semana, especialmente antes de un examen real.
-
-        **No hagas todo el mismo dia.** Flashcards diario. Feynman 2-3 veces por semana. Ejercicios cuando te sientas listo. Examen los fines de semana.
-        """)
+    with st.sidebar:
+        st.markdown("### ⚙ Opciones de estudio")
+        use_interleaving = st.checkbox("🧬 Interleaving", value=True, help="Mezcla 60% tema actual + 40% repaso de otros")
+        show_guide = st.checkbox("🧠 Ver guia de estudio", value=False)
+        if show_guide:
+            st.caption("**Flujo:** Flashcards diario → Feynman 2-3x/sem → Ejercicios cuando domines → Examen finde.")
 
     saved = load_session_state()
     if saved and saved.get("subject_id") == subject_id and not st.session_state.get("session_active"):
@@ -181,16 +172,12 @@ def _init_flashcard_session():
 def _show_flashcard_tab(subject_id: int, subject: dict, due: int, mode: str):
     _init_flashcard_session()
 
-    show_timer_controls()
-
     if due == 0 and not st.session_state.session_active:
         st.success("Sin flashcards pendientes. ¡Revisa ejercicios o el modo examen!")
         return
 
     if not st.session_state.session_active:
-        use_interleaving = st.checkbox("🧬 Interleaving (mezclar temas viejos)", value=True, help="Combina 60% tema actual + 40% repaso de otros temas")
-        label = "▶ Iniciar sesion de estudio"
-        if st.button(label, type="primary", use_container_width=True):
+        if st.button("▶ Iniciar sesion", type="primary", use_container_width=True):
             if use_interleaving:
                 st.session_state.flashcards = get_interleaved_flashcards(subject_id=subject_id, limit=20)
             else:
@@ -291,14 +278,6 @@ def _show_flashcard_tab(subject_id: int, subject: dict, due: int, mode: str):
                 _process_review(fc["id"], ReviewScore.EASY, None)
 
         st.caption("🔴=la vere pronto | 🟣=no la vere en mucho tiempo (SM-2)")
-
-
-def show_timer_controls():
-    with st.expander("⏱ Control de sesion", expanded=False):
-        cols = st.columns(3)
-        with cols[0]:
-            if st.button("⏸ Pausa rapida", use_container_width=True):
-                st.info("⏸ Tomate 3 respiraciones profundas... luego continua.")
 
 
 def _process_review(flashcard_id: int, score: ReviewScore, confidence: int | None):
