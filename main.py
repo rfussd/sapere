@@ -1,4 +1,4 @@
-"""Sapere — Tu tutor cognitivo de elite."""
+"""Sapere — Your brain's best friend."""
 
 import streamlit as st
 from datetime import datetime
@@ -16,7 +16,12 @@ st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 ensure_schema()
 
 MODE = {"academic": "🎓", "language": "🌍", "tech": "💻", "code": "🐍"}
-MODE_COLORS = {"academic": "#58a6ff", "language": "#7ee787", "tech": "#d29922", "code": "#bc8cff"}
+COLORS = {
+    "academic": {"bg": "#1a2332", "accent": "#58a6ff", "glow": "rgba(88,166,255,0.3)"},
+    "code": {"bg": "#1f1832", "accent": "#bc8cff", "glow": "rgba(188,140,255,0.3)"},
+    "tech": {"bg": "#1f1a0d", "accent": "#d29922", "glow": "rgba(210,153,34,0.3)"},
+    "language": {"bg": "#0d1f18", "accent": "#3fb950", "glow": "rgba(63,185,80,0.3)"},
+}
 
 if "user_settings" not in st.session_state:
     st.session_state.user_settings = {
@@ -27,179 +32,182 @@ if "user_settings" not in st.session_state:
 if "study_subject_id" not in st.session_state:
     st.session_state.study_subject_id = None
 
-# Study mode: full-screen clean view
+# STUDY MODE - Full screen, minimal
 if st.session_state.study_subject_id:
     with st.sidebar:
         subj = get_subject(st.session_state.study_subject_id)
-        st.markdown("### 🧠 Sapere")
         if subj:
-            st.caption(f"Estudiando: {subj.get('name', '')}")
-        if st.button("← Volver al Dashboard", use_container_width=True):
-            for k in ["session_active", "flashcards", "current_flashcard_index", "show_answer",
-                       "reviewed_count", "study_session_id", "timer_start", "timer_duration",
-                       "timer_breaks_taken", "timer_on_break", "curiosity_gap_shown"]:
+            st.markdown(f"### 🧠 {subj.get('name', '')}")
+        if st.button("← Dashboard", use_container_width=True):
+            for k in ["session_active","flashcards","current_flashcard_index","show_answer",
+                       "reviewed_count","study_session_id","timer_start","timer_duration",
+                       "timer_breaks_taken","timer_on_break","curiosity_gap_shown"]:
                 if k in st.session_state: del st.session_state[k]
             st.session_state.study_subject_id = None
             st.rerun()
+        st.markdown("---")
+        if "use_interleaving" not in st.session_state:
+            st.session_state.use_interleaving = True
+        st.session_state.use_interleaving = st.checkbox("🧬 Interleaving", st.session_state.use_interleaving)
+        st.caption("Flashcards diario → Feynman 2-3x/sem → Examen finde.")
     from sapere.ui.study import show_study_page
     show_study_page(st.session_state.study_subject_id)
-
 else:
-    # Dashboard mode
+    # DASHBOARD MODE
+    nav_icons = ["🏠", "📤", "🚌", "🌙", "⚙"]
+    nav_labels = ["Dashboard", "Nueva Materia", "Traslado", "Cierre", "Ajustes"]
     with st.sidebar:
-        st.markdown('<div style="text-align:center;padding:12px 0">', unsafe_allow_html=True)
-        st.markdown("### 🧠 Sapere")
+        st.markdown('<div style="text-align:center;padding:10px 0">', unsafe_allow_html=True)
+        st.markdown("## 🧠 Sapere")
         streak = get_streak_count()
         if streak > 0:
-            st.metric("🔥 Racha", f"{streak} días")
+            st.markdown(f'<div style="font-size:2rem;font-weight:800;color:#58a6ff;text-align:center">{streak}</div>', unsafe_allow_html=True)
+            st.markdown('<div style="text-align:center;font-size:0.8rem;color:#8b949e">dias de racha 🔥</div>', unsafe_allow_html=True)
         else:
-            st.caption("Comienza tu racha")
+            st.caption("Inicia tu racha hoy")
         st.markdown('</div>', unsafe_allow_html=True)
-
-        page = st.radio("", ["🏠 Dashboard", "📤 Nueva Materia", "🚌 Traslado", "🌙 Cierre", "⚙ Ajustes"], label_visibility="collapsed")
+        page = st.radio("", nav_labels, label_visibility="collapsed")
         st.markdown("---")
         st.caption(f"⚡ {config.gemini_model}")
 
-    if page == "🏠 Dashboard":
+    if page == "Dashboard":
         subjects = get_all_subjects()
         all_due = get_due_flashcards(subject_id=None, limit=999)
-
-        st.markdown('<div style="max-width:960px;margin:0 auto">', unsafe_allow_html=True)
-
         now = datetime.now()
-        if 4 <= now.hour < 12: greeting = "Buenos días"
+
+        # HERO
+        if 4 <= now.hour < 12: greeting = "Buenos dias"
         elif 12 <= now.hour < 19: greeting = "Buenas tardes"
         else: greeting = "Buenas noches"
-        st.markdown(f"## {greeting} 👋")
 
-        c1, c2, c3, c4 = st.columns(4)
-        with c1: st.metric("📚 Materias", len(subjects))
-        with c2: st.metric("📝 Pendientes", len(all_due))
-        with c3: st.metric("🗂 Total", sum(get_subject_progress(s["id"]).get("total_flashcards", 0) or 0 for s in subjects))
-        with c4: st.metric("🔥 Racha", f"{streak} d")
+        plan = calculate_plan(st.session_state.user_settings.get("upiicsa_start", ""))
+        days_left = plan["days_left"]
 
-        st.markdown("---")
+        st.markdown(f"""
+        <div style="background:linear-gradient(135deg, #131922 0%, #1a2332 50%, #131922 100%);
+        border:1px solid #202835;border-radius:20px;padding:28px 32px;margin-bottom:24px;text-align:center">
+        <div style="font-size:3rem;margin-bottom:8px">🧠</div>
+        <div style="font-size:1.6rem;font-weight:700;color:#ffffff;margin-bottom:6px">{greeting}, Rafa</div>
+        <div style="font-size:2.5rem;font-weight:800;color:#58a6ff;margin:8px 0">{days_left}</div>
+        <div style="font-size:0.9rem;color:#8b949e">dias para empezar UPIICSA</div>
+        <div style="margin-top:16px;display:flex;gap:24px;justify-content:center">
+        <div><span style="font-size:1.4rem;font-weight:700;color:#ffffff">{len(subjects)}</span><br><span style="font-size:0.75rem;color:#8b949e">Materias</span></div>
+        <div><span style="font-size:1.4rem;font-weight:700;color:#f85149">{len(all_due)}</span><br><span style="font-size:0.75rem;color:#8b949e">Pendientes</span></div>
+        <div><span style="font-size:1.4rem;font-weight:700;color:#3fb950">{get_streak_count()}</span><br><span style="font-size:0.75rem;color:#8b949e">Racha 🔥</span></div>
+        </div>
+        </div>
+        """, unsafe_allow_html=True)
 
         if not subjects:
             st.info("Crea tu primera materia en 'Nueva Materia'")
         else:
-            plan = calculate_plan(st.session_state.user_settings.get("upiicsa_start", ""))
-            days_left = plan["days_left"]
-
-            if days_left > 0:
-                cd = "#f85149" if days_left <= 7 else "#d29922" if days_left <= 14 else "#58a6ff"
-                st.markdown(f"""<div style="text-align:center;margin:4px 0"><span style="font-size:13px;color:#8b949e">Dias para UPIICSA:</span><span style="font-size:28px;font-weight:700;color:{cd};margin-left:8px">{days_left}</span></div>""", unsafe_allow_html=True)
-            else:
-                st.info("🎒 Modo UPIICSA. 1 materia/dia + traslados.")
-
-            st.markdown("---")
-            st.subheader("🎯 Plan de hoy")
-
-            if not plan["today"]:
-                st.success("Sin pendientes. Repasa ejercicios o modo examen.")
-            else:
-                today_cols = st.columns(len(plan["today"]))
+            # TODAY'S PLAN
+            if plan["today"]:
+                st.markdown("### 🎯 Hoy")
+                cols = st.columns(len(plan["today"]))
                 for i, item in enumerate(plan["today"]):
-                    u, due, ds, mastery, s = item
-                    icon = MODE.get(s.get("mode", "academic"), "🎓")
-                    with today_cols[i]:
-                        st.markdown(f"""<div style="background:#131820;border:1px solid #f85149;border-radius:12px;padding:16px">
-                        <div style="font-size:12px;color:#f85149;margin-bottom:4px">🔴 PRIORITARIO · {due} pend.</div>
-                        <div style="font-size:18px;font-weight:700">{icon} {s['name']}</div>
-                        <div style="font-size:12px;color:#8b949e;margin-top:4px">{int(mastery*100) if mastery else 0}% · {ds}d sin estudiar</div></div>""", unsafe_allow_html=True)
-                        if st.button(f"▶ Estudiar", key=f"plan_{s['id']}", use_container_width=True):
-                            st.session_state.study_subject_id = s["id"]
-                            st.rerun()
+                    _, due, ds, mastery, s = item
+                    mode = s.get("mode", "academic")
+                    icon = MODE.get(mode, "🎓")
+                    c = COLORS.get(mode, COLORS["academic"])
+                    with cols[i]:
+                        st.markdown(f"""
+                        <div style="background:{c['bg']};border:2px solid {c['accent']};border-radius:16px;padding:20px;
+                        box-shadow:0 0 20px {c['glow']};text-align:center">
+                        <div style="font-size:2rem;margin-bottom:8px">{icon}</div>
+                        <div style="font-size:1.1rem;font-weight:700;color:#ffffff;margin-bottom:4px">{s['name']}</div>
+                        <div style="font-size:2rem;font-weight:800;color:{c['accent']}">{due}</div>
+                        <div style="font-size:0.75rem;color:#8b949e">flashcards pendientes</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        st.button(f"▶ Estudiar {s['name']}", key=f"tp_{s['id']}", type="primary", use_container_width=True)
+                        if st.session_state.get(f"tp_{s['id']}"):
+                            _go_study(s['id'])
 
-            if plan["tomorrow"]:
-                st.caption("**Mañana:** " + " · ".join(f"{MODE.get(i[4].get('mode','academic'),'🎓')} {i[4]['name']}" for i in plan["tomorrow"]))
+                st.caption("**Despues:** " + "  ·  ".join(f"{MODE.get(i[4].get('mode','academic'),'🎓')} {i[4]['name']}" for i in plan["tomorrow"]))
 
+            # ALL SUBJECTS
             st.markdown("---")
-            st.subheader("Todas las materias")
+            st.markdown("### 📚 Todas las materias")
 
-            for item in plan["all_subjects"]:
-                color = MODE_COLORS.get(item["mode"], "#58a6ff")
-                icon = MODE.get(item["mode"], "🎓")
-                badge_color, badge_text = ("#7ee787", "Dominado") if item["mastery"] >= 80 else ("#d29922", "Progreso") if item["mastery"] >= 50 else ("#f85149", "Prioritario") if item["due"] > 0 else ("#8b949e", "Nuevo")
+            cols = st.columns(4)
+            for idx, item in enumerate(plan["all_subjects"]):
+                col_idx = idx % 4
+                mode = item["mode"]
+                icon = MODE.get(mode, "🎓")
+                c = COLORS.get(mode, COLORS["academic"])
 
-                with st.container(border=True):
-                    r1 = st.columns([3, 1, 1, 0.8])
-                    r1[0].markdown(f"### {icon} {item['name']}")
-                    r1[1].markdown(f"<span style='background:{badge_color}20;color:{badge_color};padding:2px 8px;border-radius:6px;font-size:12px;font-weight:600'>{badge_text}</span>", unsafe_allow_html=True)
-                    r1[1].caption(f"{item['mastery']}% · {item['days_since']}d")
-                    if item["due"] > 0:
-                        r1[2].markdown(f"<span style='color:#f85149;font-size:14px;font-weight:600'>📝 {item['due']}</span>", unsafe_allow_html=True)
-                    else:
-                        r1[2].markdown("<span style='color:#7ee787'>✅</span>", unsafe_allow_html=True)
-                    if r1[3].button("▶", key=f"g_{item['id']}", help=f"Estudiar"):
-                        st.session_state.study_subject_id = item["id"]
-                        st.rerun()
-                    if item["due"] > 0 or item["mastery"] > 0:
-                        pct = max(0.02, item["mastery"] / 100)
-                        st.markdown(f"""<div style="height:3px;background:#1e2733;border-radius:2px;margin:2px 0"><div style="width:{pct*100}%;height:100%;background:{color};border-radius:2px"></div></div>""", unsafe_allow_html=True)
+                badge = "🔴" if item["due"] > 10 else "🟡" if item["due"] > 0 else "🟢"
 
-        st.markdown('</div>', unsafe_allow_html=True)
+                with cols[col_idx]:
+                    pct = max(2, item["mastery"])
+                    st.markdown(f"""
+                    <div style="background:#131922;border:1px solid #202835;border-radius:14px;padding:16px;text-align:center;
+                    cursor:pointer" onclick="void(0)">
+                    <div style="font-size:1.8rem;margin-bottom:4px">{icon}</div>
+                    <div style="font-size:0.95rem;font-weight:600;color:#ffffff;margin-bottom:2px">{item['name']}</div>
+                    <div style="font-size:1.3rem;font-weight:700;color:{c['accent']};margin:4px 0">{item['due']} {badge}</div>
+                    <div style="height:4px;background:#202835;border-radius:2px;margin:8px 0">
+                    <div style="width:{pct}%;height:100%;background:{c['accent']};border-radius:2px"></div>
+                    </div>
+                    <div style="font-size:0.7rem;color:#8b949e">{item['mastery']}% dominio</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    st.button(f"▶", key=f"subj_{item['id']}", use_container_width=True)
+                    if st.session_state.get(f"subj_{item['id']}"):
+                        _go_study(item['id'])
 
-    elif page == "📤 Nueva Materia":
+    elif page == "Nueva Materia":
         from sapere.ui.upload import show_upload_page
         show_upload_page()
-
-    elif page == "🚌 Traslado":
+    elif page == "Traslado":
         from sapere.ui.mobile import show_mobile_page
         show_mobile_page()
-
-    elif page == "🌙 Cierre":
+    elif page == "Cierre":
         st.title("🌙 Cierre Nocturno")
         st.caption("Repaso ligero antes de dormir.")
-        if datetime.now().hour < 20:
-            st.info("Mas efectivo entre 8-10 PM, antes de dormir.")
         all_due = get_due_flashcards(subject_id=None, limit=10)
         if not all_due:
             st.success("✨ Sin pendientes. Buen trabajo!")
-            st.balloons()
         else:
             st.write(f"🔖 {len(all_due)} flashcards para esta noche.")
-            for k in ["n_active", "n_idx", "n_show", "n_count"]:
+            for k in ["n_active","n_idx","n_show","n_count"]:
                 if k not in st.session_state: st.session_state[k] = False if "show" in k or "active" in k else 0
             if not st.session_state.n_active:
                 if st.button("🌙 Iniciar", type="primary", use_container_width=True):
                     st.session_state.n_active = st.session_state.n_idx = st.session_state.n_count = 0
-                    st.session_state.n_show = False
-                    st.rerun()
+                    st.session_state.n_show = False; st.rerun()
             else:
                 idx = st.session_state.n_idx
                 if idx >= len(all_due):
                     st.success(f"🌙 {st.session_state.n_count} repasadas. A dormir!")
-                    st.balloons()
-                    for k in ["n_active", "n_idx", "n_show", "n_count"]: del st.session_state[k]
+                    for k in ["n_active","n_idx","n_show","n_count"]: del st.session_state[k]
                 else:
                     fc = all_due[idx]
                     st.progress((idx+1)/len(all_due))
                     st.markdown(f"### {fc['question']}")
                     if not st.session_state.n_show:
-                        if st.button("Revelar", type="primary", use_container_width=True):
-                            st.session_state.n_show = True; st.rerun()
+                        if st.button("Revelar", type="primary", use_container_width=True): st.rerun()
                     else:
-                        st.markdown(f"#### {fc['answer']}")
                         from sapere.study.flashcard import review_flashcard
                         from sapere.domain.enums import ReviewScore
                         review_flashcard(fc["id"], ReviewScore.HARD)
                         st.session_state.n_count += 1; st.session_state.n_idx += 1
                         st.session_state.n_show = False; st.rerun()
-
-    elif page == "⚙ Ajustes":
+    elif page == "Ajustes":
         st.title("⚙ Ajustes")
         s = st.session_state.user_settings
         c1, c2 = st.columns(2)
         with c1:
             s["wake_time"] = st.text_input("Despertar", s["wake_time"])
-            s["commute_start"] = st.text_input("Salida", s["commute_start"])
-            s["home_arrival"] = st.text_input("Llegada", s["home_arrival"])
-            s["upiicsa_start"] = st.text_input("Inicio UPIICSA (YYYY-MM-DD)", s.get("upiicsa_start", ""))
+            s["home_arrival"] = st.text_input("Llegada a casa", s["home_arrival"])
         with c2:
             s["study_window_start"] = st.text_input("Inicio estudio", s["study_window_start"])
-            s["study_window_end"] = st.text_input("Fin estudio", s["study_window_end"])
             s["bed_time"] = st.text_input("Dormir", s["bed_time"])
         if st.button("💾 Guardar", type="primary"):
-            st.session_state.user_settings = s
-            st.success("Guardado.")
+            st.session_state.user_settings = s; st.success("Guardado.")
+
+
+def _go_study(subject_id):
+    st.session_state.study_subject_id = subject_id
+    st.rerun()
