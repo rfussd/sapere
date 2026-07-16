@@ -44,16 +44,15 @@ def calculate_plan(upiicsa_start: str = "") -> dict:
     scored = []
     for s in subjects:
         progress = database.get_subject_progress(s["id"])
-        due = progress.get("due_flashcards", 0) or 0
-        total = progress.get("total_flashcards", 0) or 0
-        mastery = progress.get("avg_mastery", 0) or 0
-        days_since = get_days_since_study(s["id"])
-        days_since = max(0, days_since or 0)
+        due = float(progress.get("due_flashcards", 0) or 0)
+        total = float(progress.get("total_flashcards", 0) or 0)
+        mastery = float(progress.get("avg_mastery", 0) or 0)
+        days_since = float(get_days_since_study(s["id"]))
 
         if total == 0:
             continue
 
-        urgency = (due * 2) + (pow(days_since, 1.5) * 3) - (mastery * 30)
+        urgency = (due * 2.0) + (abs(days_since) ** 1.5 * 3.0) - (mastery * 30.0)
         urgency = max(0.0, urgency)
 
         scored.append((urgency, due, days_since, mastery, s))
