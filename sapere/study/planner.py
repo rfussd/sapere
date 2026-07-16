@@ -52,8 +52,16 @@ def calculate_plan(upiicsa_start: str = "") -> dict:
         if total == 0:
             continue
 
-        urgency = (due * 2.0) + (abs(days_since) ** 1.5 * 3.0) - (mastery * 30.0)
-        urgency = max(0.0, urgency)
+        term1 = due * 2.0
+        term2 = (days_since ** 1.5) * 3.0
+        term3 = mastery * 30.0
+        result = term1 + term2 - term3
+        if isinstance(result, complex):
+            urgency = result.real
+        else:
+            urgency = float(result)
+        if urgency < 0:
+            urgency = 0.0
 
         scored.append((urgency, due, days_since, mastery, s))
 
